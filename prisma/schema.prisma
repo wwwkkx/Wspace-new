@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String        @id @default(cuid())
+  email            String        @unique
+  password         String?
+  name             String?
+  image            String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  emailVerified    DateTime?     @map("email_verified")
+  notionToken      String?       @map("notion_token")
+  notionDatabaseId String?       @map("notion_database_id")
+  workspaceName    String?       @map("workspace_name")
+  workspaceId      String?       @map("workspace_id")
+  botId            String?       @map("bot_id")
+  databaseName     String?       @map("database_name")
+  authorizedAt     DateTime?     @map("authorized_at")
+  accounts         Account[]
+  documents        Document[]    @relation("UserDocuments")
+  notes            Note[]        @relation("UserNotes")
+  sessions         Session[]
+  chatSessions     ChatSession[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Note {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  title           String
+  originalContent String   @map("original_content")
+  summary         String
+  category        String
+  tags            String
+  priority        String
+  actionItems     String   @map("action_items")
+  insights        String
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation("UserNotes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notes")
+}
+
+model Document {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  fileName        String   @map("file_name")
+  fileSize        Int      @map("file_size")
+  originalContent String   @map("original_content")
+  title           String
+  summary         String
+  category        String
+  tags            String
+  keyPoints       String   @map("key_points")
+  actionItems     String   @map("action_items")
+  documentType    String   @map("document_type")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("documents")
+}
+
+model AiConfig {
+  id        String   @id @default(cuid())
+  name      String
+  endpoint  String
+  apiKey    String   @map("api_key")
+  model     String
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_configs")
+}
+
+model ChatSession {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  title     String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+model Message {
+  id            String      @id @default(cuid())
+  sessionId     String      @map("session_id")
+  role          String
+  content       String
+  searchResults String?     @map("search_results")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  session       ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("messages")
+}
