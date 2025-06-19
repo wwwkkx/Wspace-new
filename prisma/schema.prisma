@@ -28,6 +28,7 @@ model User {
   notes            Note[]        @relation("UserNotes")
   sessions         Session[]
   chatSessions     ChatSession[]
+  aiConfigs        AiConfig[]    // 添加与AiConfig的关系
 
   @@map("users")
 }
@@ -119,9 +120,12 @@ model AiConfig {
   apiKey    String   @map("api_key")
   model     String
   status    String   @default("active")
+  userId    String?  @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("ai_configs")
 }
 
